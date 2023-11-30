@@ -3,8 +3,8 @@ use rusqlite::{Connection, Result};
 use std::path::PathBuf;
 
 pub struct ReadData {
-    time_vec: Vec<i64>,
-    monitor_vec: MonitorVec,
+    pub time_vec: Vec<i64>,
+    pub monitor_vec: MonitorVec,
 }
 pub struct SQLiteReader {
     conn: Connection,
@@ -15,6 +15,16 @@ pub struct ReadConfig {
     stop_time: i64,
     period: i64,
 }
+
+impl ReadData {
+    pub fn new() -> Self {
+        Self {
+            time_vec: Vec::new(),
+            monitor_vec: MonitorVec::new(0),
+        }
+    }
+}
+
 impl ReadConfig {
     pub fn new(metric_name: Vec<String>, start_time: i64, stop_time: i64, period: i64) -> Self {
         Self {
@@ -38,7 +48,7 @@ impl SQLiteReader {
     pub fn read(
         &mut self,
         read_config: ReadConfig,
-    ) -> Result<MonitorVec, Box<dyn std::error::Error>> {
+    ) -> Result<ReadData, Box<dyn std::error::Error>> {
         let table_name: String = match read_config.period {
             10 => {
                 // println!("10秒");
@@ -76,24 +86,25 @@ impl SQLiteReader {
         let mut stmt: rusqlite::Statement<'_> = self.conn.prepare(&sql)?;
         let mut result_set = stmt.query([])?;
 
-        let mut result_vec = MonitorVec::new(0);
+        let mut result = ReadData::new();
         // 使用循环迭代结果集中的每一行
         while let Some(row) = result_set.next()? {
-            result_vec.len += 1;
-            result_vec.load_1.push_back(row.get(1)?);
-            result_vec.load_5.push_back(row.get(2)?);
-            result_vec.load_15.push_back(row.get(3)?);
-            result_vec.cpu_usage.push_back(row.get(4)?);
-            result_vec.memory_used.push_back(row.get(5)?);
-            result_vec.memory_free.push_back(row.get(6)?);
-            result_vec.swap_used.push_back(row.get(7)?);
-            result_vec.swap_free.push_back(row.get(8)?);
-            result_vec.disk_used.push_back(row.get(9)?);
-            result_vec.disk_read.push_back(row.get(10)?);
-            result_vec.disk_write.push_back(row.get(11)?);
-            result_vec.network_rx.push_back(row.get(12)?);
-            result_vec.network_tx.push_back(row.get(13)?);
+            result.monitor_vec.len += 1;
+            result.time_vec.push(row.get(0)?);
+            result.monitor_vec.load_1.push_back(row.get(1)?);
+            result.monitor_vec.load_5.push_back(row.get(2)?);
+            result.monitor_vec.load_15.push_back(row.get(3)?);
+            result.monitor_vec.cpu_usage.push_back(row.get(4)?);
+            result.monitor_vec.memory_used.push_back(row.get(5)?);
+            result.monitor_vec.memory_free.push_back(row.get(6)?);
+            result.monitor_vec.swap_used.push_back(row.get(7)?);
+            result.monitor_vec.swap_free.push_back(row.get(8)?);
+            result.monitor_vec.disk_used.push_back(row.get(9)?);
+            result.monitor_vec.disk_read.push_back(row.get(10)?);
+            result.monitor_vec.disk_write.push_back(row.get(11)?);
+            result.monitor_vec.network_rx.push_back(row.get(12)?);
+            result.monitor_vec.network_tx.push_back(row.get(13)?);
         }
-        Ok(result_vec)
+        Ok(result)
     }
 }
