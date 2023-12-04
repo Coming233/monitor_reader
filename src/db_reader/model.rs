@@ -17,6 +17,7 @@ pub struct MonitorVec {
     pub network_rx: VecDeque<u64>,
     pub network_tx: VecDeque<u64>,
 }
+
 impl MonitorVec {
     pub fn new(queue_len: usize) -> Self {
         let default_data_f32 = VecDeque::new();
